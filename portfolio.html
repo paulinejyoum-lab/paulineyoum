@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Portfolio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://use.typekit.net/yac2ock.css">
+
+<style>
+/* ---------- Base ---------- */
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: white;
+  color: black;
+  font-family: 'Fahkwang', sans-serif;
+}
+
+article.content {height: 2rem;}
+
+img { width: 100%; display: block; }
+ol, ul { list-style: none; }
+
+.pinned {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.scroll-layer {
+  position: relative;
+  z-index: 2;                 /* above .pinned, below your overlays (z-index: 10) */
+  pointer-events: none;       /* lets the mouse reach the pinned content (the spotlight) */
+}
+
+.spacer { height: 130vh; }    /* one empty screen of scrolling */
+
+.item {
+  display: grid;
+  grid-template-columns: 1fr 1fr;    /* image | text */
+  gap: 24px;
+  width: min(90%, 1000px);
+  margin: 0 auto 60px;
+  pointer-events: auto;
+}
+
+.item img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.item .text {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;         /* pushes the text to the bottom */
+  padding: 20px;
+  background: none;
+}
+.item .text h3,
+.item .text p {
+  margin: 0 0 6px;
+  font-family: 'Fahkwang', sans-serif;
+}
+
+.item {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.item.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Stack on phones */
+@media (max-width: 600px) {
+  .item { grid-template-columns: 1fr; }
+}
+.slider-wrap {
+  position: relative;
+  min-width: 0;               /* stops the grid column from stretching to fit all images */
+}
+
+.slider {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;      /* hide scrollbar (Firefox) */
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;  /* swipe sideways, page still scrolls vertically */
+}
+.slider::-webkit-scrollbar { display: none; }   /* hide scrollbar (Chrome/Safari) */
+
+.slider img {
+  flex: 0 0 100%;             /* each image fills the box */
+  width: 100%;
+  height: auto;
+  scroll-snap-align: center;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.slider img { aspect-ratio: 4 / 3; object-fit: cover; }
+
+.dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .5);
+  transition: background .2s ease, transform .2s ease;
+}
+.dots span.active {
+  background: white;
+  transform: scale(1.3);
+}
+
+/* ---------- Navbar ---------- */
+.navbar {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background: white;
+}
+.nav-links { margin-left: auto; }   /* pushes the menu to the right */
+
+.nav-links a {
+  display: inline-block;
+  margin: 10px;
+  padding: 10px 20px;
+  background: white;
+  color: black;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: transform .2s ease, background-color .2s ease;
+}
+.nav-links a:hover {
+  background: darkorange;
+  transform: translateY(-2px);
+}
+
+/* ---------- Hero grid ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  margin-top: 5px;                /* replaces the empty iframe spacer */
+}
+.grid > * { margin: 0; padding: 0; }
+.grid .content { background: darkorange; }
+
+@media (max-width: 500px) {
+  .grid { display: block; }
+}
+
+/* ---------- Overlays ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .3s ease, visibility .3s ease;
+  z-index: 10;
+}
+.overlay:target {
+  opacity: 1;
+  visibility: visible;
+}
+.overlay .backdrop {                 /* click outside the panel to close */
+  position: absolute;
+  inset: 0;
+}
+
+.panel {
+  position: relative;
+  width: min(100%, 640px);
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(20px) scale(.97);
+  transition: transform .3s ease;
+}
+.overlay:target .panel {
+  transform: translateY(0) scale(1);
+}
+
+.close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  text-decoration: none;
+  color: #222;
+}
+
+/* ---------- Two-column layout (about + resume) ---------- */
+.two-col {
+  display: grid;
+  grid-template-columns: 140px 1fr;  /* label | content */
+  gap: 28px 32px;
+  align-items: start;
+}
+.two-col .info p { margin: 0 0 12px; }
+.two-col .small { font-size: 13px; }
+
+@media (max-width: 500px) {
+  .two-col {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .two-col .info { margin-bottom: 20px; }
+}
+
+/* ---------- Contact form ---------- */
+.contact-form {
+  display: grid;
+  gap: 20px;
+  width: 100%;
+  margin: 0 auto;
+}
+.contact-form h2 { margin: 0; font-weight: 400; }
+
+.contact-form .field {
+  display: grid;
+  gap: 6px;
+}
+.contact-form label {
+  font-size: .85rem;
+  letter-spacing: .05em;
+}
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  font: inherit;
+  color: black;
+  background: white;
+  border: 1px solid black;
+  border-radius: 0;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.contact-form textarea { min-height: 160px; resize: vertical; }
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+  outline: none;
+  border-color: darkorange;
+  box-shadow: 0 0 0 3px rgba(255, 140, 0, .25);
+}
+.contact-form button {
+  justify-self: start;
+  padding: 12px 32px;
+  font: inherit;
+  color: black;
+  background: white;
+  border: 1px solid black;
+  cursor: pointer;
+  transition: background-color .2s ease, transform .2s ease;
+}
+.contact-form button:hover {
+  background: darkorange;
+  transform: translateY(-2px);
+}
+
+@media (min-width: 600px) {
+  .contact-form .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+}
+@media (max-width: 599px) {
+  .contact-form .row { display: grid; gap: 20px; }
+
+}
+.spotlight {
+  --x: -999px;
+  --y: -999px;
+  --size: 120px;
+
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  cursor: none;
+  touch-action: none;
+}
+
+.layer { position: relative; }
+
+.layer img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Text sitting on the image */
+.caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px;
+  color: white;
+  min-width: 1200px;
+  font-family: 'Fahkwang', sans-serif;
+}
+.caption p { font-family: 'Fahkwang', sans-serif; margin: 0 0 6px; color: white; font-size: clamp(1rem, 3.5vw, 4rem); }
+
+/* Blurred layer: image and text are both blurred */
+.base img {
+  filter: blur(10px);
+  transform: scale(1.05);   /* hides the soft edges */
+}
+.base .caption { filter: blur(4px); }
+
+/* Sharp layer: same content, masked to a circle around the cursor */
+.sharp {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(circle var(--size) at var(--x) var(--y), #000 0%, #000 55%, transparent 100%);
+          mask-image: radial-gradient(circle var(--size) at var(--x) var(--y), #000 0%, #000 55%, transparent 100%);
+}
+.sharp img {
+  height: 100%;
+  object-fit: cover;
+}
+
+.expandable .clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;      /* number of lines to show */
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.expandable.open .clamp {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+
+.expandable .more {
+  margin-top: 4px;
+  padding: 0 6px;
+  font: inherit;
+  line-height: 1;
+  color: black;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.expandable .more:hover { color: darkorange; }
+
+/* Hidden when the text is short enough that nothing is cut off */
+.expandable.no-clamp .more { display: none; }
+
+</style>
+</head>
+<div class="pinned">
+<body>
+
+<header class="navbar">
+  <div class="logo"></div>
+  <nav class="nav-links">
+    <a href="#about">about</a>
+    <a href="#resume">resume</a>
+    <a href="#contact-form">contact</a>
+    <a href="https://www.instagram.com/pln_ym/">↗</a>
+  </nav>
+</header>
+
+
+<!-- ========== About overlay ========== -->
+<div class="overlay" id="about">
+  <a href="#" class="backdrop" aria-label="Close"></a>
+  <div class="panel">
+    <a href="#" class="close" aria-label="Close">×</a>
+
+    <div class="two-col">
+      <div class="label"><img src="images/facepic.jpeg"></div>
+      <div class="info">
+        <p>
+   everything i could ever say about myself </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========== Resume overlay ========== -->
+<div class="overlay" id="resume">
+  <a href="#" class="backdrop" aria-label="Close"></a>
+  <div class="panel">
+    <a href="#" class="close" aria-label="Close">×</a>
+
+    <div class="two-col">
+
+      <div class="label">Education</div>
+      <div class="info">
+        <p>Bachelors of Fine Arts in Product Design<br>
+        <span class="small">Minor in Communications and Data Visualization</span><br>
+        Parsons School of Design<br>
+        <span class="small">2024-2028</span></p>
+      </div>
+
+      <div class="label">Employment</div>
+      <div class="info">
+        <p>Intern<br>
+        W&amp;P Studio<br>
+        <span class="small">May 2025 - August 2025</span></p>
+
+        <p>Assistant<br>
+        Anarkh<br>
+        <span class="small">September 2024 - December 2024</span></p>
+
+        <p>Fabrication Intern<br>
+        IBCD Woodworks<br>
+        <span class="small">June - August 2022, 2023</span></p>
+      </div>
+
+      <div class="label">Skills</div>
+      <div class="info">
+        <p><span class="small">Adobe</span><br>
+        Illustrator, Photoshop, InDesign</p>
+
+        <p><span class="small">CAD</span><br>
+        Fusion, Rhino, Nomad Sculpt, Keyshot</p>
+
+        <p><span class="small">Web</span><br>
+        Figma, HTML/CSS</p>
+
+        <p>Metal and wood shop machinery, Ceramic tools, Laser cutting, CNC</p>
+
+        <p>English, Korean, Seal of Biliteracy in Spanish</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ========== Contact overlay ========== -->
+<div class="overlay" id="contact-form">
+  <a href="#" class="backdrop" aria-label="Close"></a>
+  <div class="panel">
+    <a href="#" class="close" aria-label="Close">×</a>
+
+    <form class="contact-form" action="https://formspree.io/f/xjygrplp" method="POST">
+      <h2>Contact</h2>
+
+      <div class="row">
+        <div class="field">
+          <label for="name">name</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        <div class="field">
+          <label for="email">email</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="subject">subject</label>
+        <input type="text" id="subject" name="subject">
+      </div>
+
+      <div class="field">
+        <label for="message">message</label>
+        <textarea id="message" name="message" required></textarea>
+      </div>
+
+      <button type="submit">send</button>
+    </form>
+  </div>
+</div>
+
+<div class="spotlight" id="spotlight">
+
+  <div class="layer base">
+    <img src="images/momblur.png" alt="Description of the image">
+    <div class="caption">
+      
+    </div>
+  </div>
+
+  <div class="layer sharp" aria-hidden="true">
+    <img src="images/momclear.png" alt="">
+    <div class="caption">
+      <p>pauline youm's selected works of products, <br>furniture, and accessories</p>
+    </div>
+  </div>
+
+</div>
+<script>
+  const spot = document.getElementById('spotlight');
+
+  spot.addEventListener('pointermove', e => {
+    const rect = spot.getBoundingClientRect();
+    spot.style.setProperty('--x', (e.clientX - rect.left) + 'px');
+    spot.style.setProperty('--y', (e.clientY - rect.top) + 'px');
+  });
+
+  spot.addEventListener('pointerleave', () => {
+    spot.style.setProperty('--x', '-999px');   // move the spotlight off the image
+    spot.style.setProperty('--y', '-999px');
+  });
+</script>
+
+</body>
+<body>
+</div>
+
+<div class="scroll-layer">
+  <div class="spacer"></div>
+
+<div class="item">
+
+  <div class="slider-wrap">
+    <div class="slider">
+      <img src="images/tractor.stl.gif" alt="Description">
+      <img src="images/tractorprint.jpeg" alt="Description">
+      <img src="images/one-c.jpg" alt="Description">
+    </div>
+    <div class="dots"></div>   <!-- filled in by the script -->
+  </div>
+
+  <div class="text">
+    <h3>Tractor</h3>
+    <p>Designed on Fusion 360, rendered on Keyshot, and 3D printed in PLA</p>
+  </div>
+
+</div>
+
+<div class="item">
+<div class="slider-wrap">
+    <div class="slider">
+       <img src="images/phone.stl.gif" alt="Description">
+      <img src="images/tractorprint.jpeg" alt="Description">
+      <img src="images/one-c.jpg" alt="Description">
+    </div>
+    <div class="dots"></div>   <!-- filled in by the script -->
+  </div>
+
+   <div class="text">
+      <h3>Phone case</h3>
+      <p>Designed and sculpted on Nomad Sculpt, and 3D printed in PLA</p>
+    </div>
+</div>
+
+
+
+  <div class="item">
+    <img src="images/chair.gif" alt="Description">
+    <div class="text">
+      <h3>Wireframe Chair</h3>
+      <div class="expandable">
+  <p class="clamp">Modeled on Nomad Sculpt, then vertically and horizantally sliced on Fusion. Slice shapes traced into illustrator file and CNC cut into plywood. Plywood used as a mold for steel rods to be bent on its perimeters. Steel welded into place and supports added inside to be able to become a fully standing and able to be sat on with full force chair. </p>
+  <button class="more" aria-expanded="false" aria-label="Show more">…</button>
+</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) e.target.classList.add('visible');
+    });
+  }, { threshold: 0.2 });
+
+  document.querySelectorAll('.scroll-layer .item').forEach(el => obs.observe(el));
+</script>
+<script>
+  document.querySelectorAll('.expandable').forEach(box => {
+    const text = box.querySelector('.clamp');
+    const btn  = box.querySelector('.more');
+
+    // If the text already fits, there's nothing to expand
+    if (text.scrollHeight <= text.clientHeight + 1) {
+      box.classList.add('no-clamp');
+    }
+
+    btn.addEventListener('click', () => {
+      const open = box.classList.toggle('open');
+      btn.textContent = open ? 'show less' : '…';
+      btn.setAttribute('aria-expanded', open);
+      btn.setAttribute('aria-label', open ? 'Show less' : 'Show more');
+    });
+  });
+</script>
+<script>
+  document.querySelectorAll('.slider-wrap').forEach(wrap => {
+    const slider = wrap.querySelector('.slider');
+    const slides = slider.querySelectorAll('img');
+    const dotBox = wrap.querySelector('.dots');
+
+    // Build one dot per image
+    slides.forEach(() => dotBox.appendChild(document.createElement('span')));
+    const dots = dotBox.querySelectorAll('span');
+
+    function updateDots() {
+      const i = Math.round(slider.scrollLeft / slider.clientWidth);
+      dots.forEach((d, n) => d.classList.toggle('active', n === i));
+    }
+    slider.addEventListener('scroll', updateDots, { passive: true });
+    updateDots();
+
+    // Click-and-drag for mouse users (touch already works natively)
+    let down = false, startX = 0, startScroll = 0;
+
+    slider.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'mouse') return;
+      down = true;
+      startX = e.clientX;
+      startScroll = slider.scrollLeft;
+      slider.style.scrollSnapType = 'none';   // snapping off while dragging
+      slider.setPointerCapture(e.pointerId);
+    });
+    slider.addEventListener('pointermove', e => {
+      if (down) slider.scrollLeft = startScroll - (e.clientX - startX);
+    });
+    function end() {
+      if (!down) return;
+      down = false;
+      slider.style.scrollSnapType = '';
+      const i = Math.round(slider.scrollLeft / slider.clientWidth);
+      slider.scrollTo({ left: i * slider.clientWidth, behavior: 'smooth' });
+    }
+    slider.addEventListener('pointerup', end);
+    slider.addEventListener('pointercancel', end);
+  });
+</script>
+</body>
+</html>
+
